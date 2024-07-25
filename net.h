@@ -30,6 +30,7 @@ extern int minuter;
 extern int hourl;
 extern int hourr;
 extern int songNum;
+extern bool thememode;
 extern bool RingingBell;
 // 
 #endif

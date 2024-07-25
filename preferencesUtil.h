@@ -16,5 +16,7 @@ void getUdpTitle();
 void setClockTimer();
 void getClockTimer();
 void setUdpClockTimer(int hr,int hl,int mr,int ml,int sn,String ring);
+void setThemeMode();
+void getThemeMode();
 // void setGetTitleFont();
 #endif

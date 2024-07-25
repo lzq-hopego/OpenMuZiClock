@@ -154,9 +154,26 @@ void getClockTimer(){
 void setInfo4Test(){
   prefs.begin("clock");
   prefs.putString("ssid", "李木子的iqoo");
-  prefs.putString("pass", "lizhanqi0228");
+  prefs.putString("pass", "limuzi0228");
   prefs.putString("city", "陕州");
   prefs.putString("adm", "三门峡");
   prefs.putString("location", "");
+  prefs.end();
+}
+
+
+
+//设置主题切换模式
+void setThemeMode(){
+  prefs.begin("clock");
+  prefs.putBool("thememode", thememode);//0为手动，1为自动
+  prefs.end();
+}
+
+
+//设置主题切换模式
+void getThemeMode(){
+  prefs.begin("clock");
+  prefs.getBool("thememode", false);//0为手动，1为自动
   prefs.end();
 }

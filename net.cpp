@@ -34,6 +34,7 @@ String title; //时钟名
 String ziti_style; //字体名
 String key;//和风天气key
 String WifiNames; // 根据搜索到的wifi生成的option字符串
+bool thememode;//主题是否自动切换
 // SoftAP相关
 const char *APssid = "Muzi Clock";
 IPAddress staticIP(192, 168, 1, 1);

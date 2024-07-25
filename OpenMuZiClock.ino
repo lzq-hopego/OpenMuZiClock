@@ -9,12 +9,31 @@
 #include <ArduinoJson.h>
 
 
+/**
+Dudu天气时钟  版本2.0
+
+本次更新内容：
+
+1.配网页面更新，增加了城市的上级行政区划，用于排除重名城市。
+(之前输入普陀，可能是浙江舟山市普陀区，也可能是上海市普陀区，有了上级行政区划，就可以进行精确划分了)
+
+2.更改了天气接口，由于易客天气现在只免费3个月，所以这个版本将天气接口改为了和风天气，功能更强大、接口更稳定且永久免费。
+
+3.增加了空气质量页面，包含了pm10颗粒物，pm2.5颗粒物，no2二氧化氮，so2二氧化硫，co一氧化碳以及o3臭氧。
+*/
+
+
 unsigned int prevDisplay = 0; // 实况天气页面上次显示的时间
 unsigned int preTimerDisplay = 0; // 计数器页面上次显示的毫秒数/10,即10毫秒显示一次
 unsigned long startMillis = 0; // 开始计数时的毫秒数
 int synDataRestartTime = 60; // 同步NTP时间和天气信息时，超过多少秒就重启系统，防止网络不好时，傻等
 bool isCouting = false; // 计时器是否正在工作
 bool inputdata=true;//接受来自电脑的控制信息
+const int ldrPin = 1; //左侧光敏电阻连接引脚1
+bool black_light=false;//当前是否为黑色背景
+int ldrValue;//用于存储亮度值
+
+
 
 // Wifi相关
 char incomingPacket[255];  //存储Udp客户端发过来的数据
@@ -38,7 +57,9 @@ void setup() {
   drawText("系统启动中...");
   // 测试的时候，先写入WiFi信息，省的配网，生产环境请注释掉
   // setInfo4Test();
-
+  // if (title_font=="")
+  // setUdpTitleFont("sim");
+  // title_font=ziti_style;
   // 查询是否有配置过Wifi，没有->进入Wifi配置页面（0），有->进入天气时钟页面（1）
   getWiFiCity();
   // nvs中没有WiFi信息，进入配置页面
@@ -81,13 +102,23 @@ Udp.begin(1122);//在1122端口上监听udp的消息
 ip=WiFi.localIP().toString();//获取当前ip
 
 getClockTimer();
+if(backColor == BACK_BLACK){
+  black_light=true;
+  }
 }
 
 void loop() {
   if(currentPage == SETTING){
     dnsServer.processNextRequest();//运行dns服务
   }
+  // Serial.println(thememode);
   
+  if(thememode){
+    autolight();
+    // delay(500);
+  }
+
+
   /*接收发送过来的Udp数据*/
   int Data_length = Udp.parsePacket();  //获取接收的数据的长度
   if (Data_length && inputdata)                      //如果有数据那么Data_length不为0，无数据Data_length为0
@@ -105,9 +136,12 @@ void loop() {
             drawCpuPageText(dict["cpu"],dict["mem"],dict["net"],Udp.remoteIP().toString(),dict["cpu_temperature"]);
           }else if(dict["command"]=="theme"){
              if(backColor == BACK_BLACK){ // 确认当前的背景颜色
-              udpsend("back");
+             if(thememode){udpsend("back-auto");}else{udpsend("back");}
+              
             }else{
-              udpsend("white");
+              // udpsend("white");
+             if(thememode){udpsend("white-auto");}else{udpsend("white");}
+
             }
           }else if(dict["command"]=="restart"){
             Serial.println("重启中");
@@ -130,9 +164,21 @@ void loop() {
               GetTitleFont();
               getUdpTitle();
               if(backColor == BACK_BLACK){ //判断主体
-                stringtext="{'ssid':'"+ssid+"','pass':'"+pass+"','city':'"+city+"','adm':'"+adm+"','theme':'back','title':'"+title+"','title_font':'"+ziti_style+"'}";
+                stringtext="{'ssid':'"+ssid+"','pass':'"+pass+"','city':'"+city+"','adm':'"+adm+"','theme':'back','title':'"+title+"','title_font':'"+ziti_style;
+                if(thememode){
+                  stringtext+="','thememode':'auto'";
+                }else{
+                  stringtext+="','thememode':'unauto'";
+                }
+                stringtext+="}";
               }else{
-                stringtext="{'ssid':'"+ssid+"','pass':'"+pass+"','city':'"+city+"','adm':'"+adm+"','theme':'white','title':'"+title+"','title_font':'"+ziti_style+"'}";
+                stringtext="{'ssid':'"+ssid+"','pass':'"+pass+"','city':'"+city+"','adm':'"+adm+"','theme':'white','title':'"+title+"','title_font':'"+ziti_style;
+                if(thememode){
+                  stringtext+="','thememode':'auto'";
+                }else{
+                  stringtext+="','thememode':'unauto'";
+                }
+                stringtext+="}";
               }
               udpsend(stringtext);
           }else if(dict["command"]=="changesetting"){
@@ -167,8 +213,27 @@ void loop() {
               Serial.println("更改闹钟的定时信息");
 
               setUdpClockTimer(dict["hourr"],dict["hourl"],dict["minuter"],dict["minutel"],dict["songNum"],dict["RingingBell"]);
+              // setUdpClockTimer(dict["hourr"].as<int>(),dict["hourl"].as<int>(),dict["minuter"].as<int>(),dict["minutel"].as<int>(),dict["songNum"].as<int>());
 
               getClockTimer();           
+              udpsend("ok");
+          }else if(dict["command"]=="changethemeauto"){
+              if(thememode==false){
+              thememode=true;
+              setThemeMode();
+              getThemeMode();
+              drawThemePage();
+              }
+              drawCpuPage(ip);
+              udpsend("ok");
+          }else if(dict["command"]=="changethemeunauto"){
+            if(thememode){
+              thememode=false;
+              setThemeMode();
+              getThemeMode();
+              drawThemePage();
+              }
+              drawCpuPage(ip);
               udpsend("ok");
           }
         }
@@ -283,6 +348,15 @@ void click(){
           // 停止音乐播放
           vTaskDelete(playSongsTask);
       }
+    }else if(currentPage == THEME){
+      if(thememode){
+        thememode=false;
+      }else{
+        thememode=true;
+      }
+      setThemeMode();
+      getThemeMode();
+      drawThemePage();
     }
   Serial.println("单击了按钮");
 }
@@ -462,5 +536,78 @@ void udpsend(String text){
   Udp.endPacket();  //向目标IP目标端口发送数据
 }
 
+void autolight(){
+  ldrValue = analogRead(ldrPin); //读取模拟口A5的值，存入变量中
+  if (ldrValue<=1100){
+    if (black_light==false){
+      Serial.println("切换黑夜模式");
+      black_light=true;
+      changePageTheme();
+    }
+  }
+  if (ldrValue>=1400){
+    if (black_light){
+      Serial.println("切换白天模式");
+      black_light=false;
+      changePageTheme();
+    }
+  }
+}
 
 
+void  changePageTheme(){
+   if(backColor == BACK_BLACK){ // 原先为黑色主题，改为白色
+      backColor = BACK_WHITE;
+      backFillColor = 0xFFFF;
+      penColor = 0x0000;
+    }else{
+      backColor = BACK_BLACK;
+      backFillColor = 0x0000;
+      penColor = 0xFFFF;
+    }
+    setBackColor(backColor);
+    switch(currentPage){
+    case WEATHER:
+      drawWeatherPage();
+      enableAnimScrollText();
+      break;
+    case AIR:
+      disableAnimScrollText();
+      drawAirPage();
+      break;
+    case FUTUREWEATHER:
+      drawFutureWeatherPage();
+      break;
+    case THEME:
+      drawThemePage();
+      break;
+    case TIMER:
+      drawTimerPage();
+      break;
+    case RESET:
+      drawResetPage();
+      break;
+    case CPU:
+      drawCpuPage(ip);
+      break;
+    case PLAYSONG:
+      drawPlaySongs("歌");
+      setClockTimer();
+      getClockTimer();
+      break;
+    case MINUTE:
+      drawPlaySongs("分");
+      setClockTimer();
+      getClockTimer();
+      break;
+    case HOUR:
+      drawPlaySongs("时");
+      setClockTimer();
+      getClockTimer();
+      break;
+    default:
+      break;
+  }
+  
+  // Serial.println(thememode);
+}

@@ -555,6 +555,9 @@ void drawThemePage(){
     clk.drawString("切换黑色主题",120,140);
   }
 
+  if (thememode){
+    clk.drawString("auto",120,190);
+  }
   clk.pushSprite(0,60);
   clk.deleteSprite();
 }
