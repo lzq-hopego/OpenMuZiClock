@@ -38,8 +38,8 @@
   2. 热点连接成功后会自动跳转到自动配网页面，配置即可
      - 要想显示天气就必须要注册一个和风天气的账号，然后在web配网页面中填写key
      - 设备名，则是主页显示的名字，如果为中文请手动编译固件，编译字体文件替换font目录中的simyou30.h
-  3. 使用MuZiClockDriver.exe驱动时，muziclock需切换至manager页面后驱动才能正常用
-     - 注意muziclock的ip地址，需要在驱动中填写
+  3. 使用MuZiClockDriver.exe上位机软件时，muziclock需切换至manager页面后上位机软件才能正常用
+     - 注意muziclock的ip地址，需要在上位机软件中填写
   4. 剩下的功能请读者慢慢品读
 - 基础进阶
   1. 主页面(首页)单击按钮关闭闹钟，长按重启时钟
