@@ -15,7 +15,7 @@
 | 5        | ONE_WIRE_BUS            | 单总线（如DS18B20温度传感器）     |
 | 6        | TFT_CS（TFT屏幕片选）   | TFT液晶屏SPI片选                  | 
 | 7        | TFT_MOSI/SDA（TFT屏幕数据） | TFT液晶屏SPI通信                  | 
-| 8        | BUTTON（按钮）          | 按键输入（需上拉/下拉电阻）       | 
+| 8        | BUTTON（按钮）          | 按键输入       | 
 | 10       | TFT_DC（TFT屏幕数据/命令） | TFT液晶屏控制                   | 
 
 
