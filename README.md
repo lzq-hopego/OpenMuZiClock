@@ -17,3 +17,28 @@
 | 7        | TFT_MOSI/SDA（TFT屏幕数据） | TFT液晶屏SPI通信                  | 
 | 8        | BUTTON（按钮）          | 按键输入（需上拉/下拉电阻）       | 
 | 10       | TFT_DC（TFT屏幕数据/命令） | TFT液晶屏控制                   | 
+
+
+## 密钥生成说明
+建议本地生成密钥，可使用`python`进行生成，安装第三方库`cryptography`
+运行以下代码进行生成
+```
+from cryptography.hazmat.primitives.asymmetric import ed25519
+from cryptography.hazmat.primitives import serialization
+# 生成私钥
+private_key = ed25519.Ed25519PrivateKey.generate()
+public_key = private_key.public_key()
+# 保存私钥（PEM格式）
+with open("ed25519_private_私钥.pem", "wb") as f:
+   f.write(private_key.private_bytes(
+       encoding=serialization.Encoding.PEM,
+       format=serialization.PrivateFormat.PKCS8,
+       encryption_algorithm=serialization.NoEncryption()
+   ))
+# 保存公钥（PEM格式）
+with open("ed25519_public_公钥.pem", "wb") as f:
+   f.write(public_key.public_bytes(
+       encoding=serialization.Encoding.PEM,
+       format=serialization.PublicFormat.SubjectPublicKeyInfo
+   ))
+```
